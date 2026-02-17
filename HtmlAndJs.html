@@ -16,18 +16,6 @@
 	</form>
 </div>
 
-<style>
-	#chatbot-bubble{position:fixed;right:20px;bottom:20px;z-index:999999;}
-	#chatbot-open{padding:12px 14px;border-radius:999px;cursor:pointer;}
-	#chatbot-box{display:none;position:fixed;right:20px;bottom:70px;width:350px;max-width:95vw;height:480px;max-height:85vh;background:#fff;border:1px solid #ddd;border-radius:12px;z-index:999999;overflow:visible;font-family:system-ui;}
-	#chatbot-box.active{display:block;}
-	#chatbot-header{padding:10px 12px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;}
-	#chatbot-messages{padding:12px;height:320px;overflow:auto;background:#fafafa;}
-	#chatbot-form{display:flex;gap:8px;padding:10px;border-top:1px solid #eee;}
-	#chatbot-input{flex:1;padding:10px;border:1px solid #ddd;border-radius:10px;min-width:0;}
-	#chatbot-send{padding:10px 12px;border-radius:10px;cursor:pointer;}
-</style>
-
 <script>
 (function(){
 	const API_URL = "https://api.bittipuisto.fi/chat";
@@ -39,6 +27,7 @@
 		el.style.borderRadius = "10px";
 		el.style.maxWidth = "90%";
 		el.style.whiteSpace = "pre-wrap";
+
 		if (who === "user") {
 			el.style.background = "#e8f0ff";
 			el.style.marginLeft = "auto";
@@ -47,6 +36,7 @@
 			el.style.border = "1px solid #eee";
 			el.style.marginRight = "auto";
 		}
+
 		el.textContent = text;
 		messages.appendChild(el);
 		messages.scrollTop = messages.scrollHeight;
@@ -66,11 +56,10 @@
 			box.classList.toggle("active", isOpen);
 			box.setAttribute("aria-hidden", String(!isOpen));
 
-			// Halutessasi vaihda napin teksti auki/kiinni
+			// Toggle button text
 			openBtn.textContent = isOpen ? "Sulje" : "Chat";
 
 			if (isOpen) {
-				// init-viesti vain kerran
 				if (!messages.dataset.inited) {
 					addMsg(
 						messages,
@@ -79,7 +68,6 @@
 					);
 					messages.dataset.inited = "1";
 				}
-				// focus inputiin
 				setTimeout(() => input.focus(), 0);
 			}
 		}
@@ -89,13 +77,9 @@
 			setOpenState(!isOpen);
 		}
 
-		// ✅ Chat-nappi toimii nyt toggle-na
 		openBtn.addEventListener("click", toggleChat);
-
-		// ✅ Sulje-nappi sulkee
 		closeBtn.addEventListener("click", () => setOpenState(false));
 
-		// (bonus) ESC sulkee
 		document.addEventListener("keydown", (e) => {
 			if (e.key === "Escape") setOpenState(false);
 		});
@@ -108,37 +92,36 @@
 			input.value = "";
 			addMsg(messages, text, "user");
 
-		try {
-			const r = await fetch(API_URL, {
-			method: "POST",
-			headers: {"Content-Type":"application/json"},
-			body: JSON.stringify({ message: text })
-			});
+			try {
+				const r = await fetch(API_URL, {
+					method: "POST",
+					headers: {"Content-Type":"application/json"},
+					body: JSON.stringify({ message: text })
+				});
 
-			// If server returns non-2xx, show that instead of generic message
-			const contentType = r.headers.get("content-type") || "";
-			let payloadText = "";
-			let data = null;
+				const contentType = r.headers.get("content-type") || "";
+				let payloadText = "";
+				let data = null;
 
-			if (contentType.includes("application/json")) {
-			data = await r.json();
-			} else {
-			payloadText = await r.text(); // useful if server returns HTML error page
+				if (contentType.includes("application/json")) {
+					data = await r.json();
+				} else {
+					payloadText = await r.text();
+				}
+
+				if (!r.ok) {
+					addMsg(
+						messages,
+						`Palvelinvirhe (${r.status}). ${data?.detail || payloadText || "Yritä uudelleen."}`,
+						"bot"
+					);
+					return;
+				}
+
+				addMsg(messages, data?.reply || "En saanut vastausta juuri nyt.", "bot");
+			} catch (e) {
+				addMsg(messages, `Tuli virhe yhteydessä: ${e?.message || e}`, "bot");
 			}
-
-			if (!r.ok) {
-			addMsg(
-				messages,
-				`Palvelinvirhe (${r.status}). ${data?.detail || payloadText || "Yritä uudelleen."}`,
-				"bot"
-			);
-			return;
-			}
-
-			addMsg(messages, data?.reply || "En saanut vastausta juuri nyt.", "bot");
-		} catch (e) {
-			addMsg(messages, `Tuli virhe yhteydessä: ${e?.message || e}`, "bot");
-		}
 		});
 	});
 })();
