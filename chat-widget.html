@@ -108,7 +108,7 @@
 (function(){
 
   // API endpoint
-  const API_URL = "https://api.bittipuisto.fi/chat";
+  const API_URL = "YOUR_API_URL";
 
   /**
    * Adds a chat message to the message container
@@ -172,7 +172,7 @@
         if (!messages.dataset.inited) {
           addMsg(
             messages,
-            "Moi! Olen Bittipuiston luoma esimerkkibotti. Tämä botti käyttää VAIN bittipuisto.fi-sivustolla olevaa tietoa ja vastaa sen mukaan kysymyksiin.",
+            "Hello! How can i help you today?",
             "bot"
           );
           messages.dataset.inited = "1";
@@ -220,10 +220,10 @@
         });
 
         const data = await r.json();
-        addMsg(messages, data.reply || "En saanut vastausta juuri nyt.", "bot");
+        addMsg(messages, data.reply || "Did not get reply. Try again", "bot");
 
       } catch {
-        addMsg(messages, "Tuli virhe yhteydessä. Yritä hetken päästä uudelleen.", "bot");
+        addMsg(messages, "Network error. Try again later.", "bot");
       }
     });
 

@@ -32,11 +32,9 @@ class ChatReq(BaseModel):
 
 # Define bots behaviour
 SYSTEM_PROMPT = """
-Olet ystävällinen ja ytimekäs asiakaspalvelubotti.
-Puhut vain suomea.
-Pidä vastaukset selkeinä ja ammattimaisina.
-Toimit bittipuisto.fi sivun asiakaspalvelijana.
-Hae tietoja kysymyksiin vain bittipuisto.fi sivustolta..
+You are friendly customer service bot.
+You only speak english.
+Keep your answers clear and professional.
 """
 
 @app.get("/health")
