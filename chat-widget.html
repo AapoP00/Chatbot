@@ -1,233 +1,145 @@
-<!-- Chat bubble button (floating launcher) -->
 <div id="chatbot-bubble">
-  <button id="chatbot-open" type="button">Chat</button>
+	<button id="chatbot-open" type="button">Chat</button>
 </div>
 
-<!-- Chat window container -->
 <div id="chatbot-box" aria-hidden="true">
-  <div id="chatbot-header">
-    <strong>Chat</strong>
-    <!-- Close button inside chat window -->
-    <button id="chatbot-close" type="button" aria-label="Close chat">✕</button>
-  </div>
+	<div id="chatbot-header">
+		<strong>Chat</strong>
+		<button id="chatbot-close" type="button">✕</button>
+	</div>
 
-  <!-- Message container -->
-  <div id="chatbot-messages"></div>
+	<div id="chatbot-messages"></div>
 
-  <!-- Input form -->
-  <form id="chatbot-form">
-    <input 
-      id="chatbot-input" 
-      type="text" 
-      placeholder="Kirjoita viesti…" 
-      autocomplete="off" 
-    />
-    <button id="chatbot-send" type="submit">Lähetä</button>
-  </form>
+	<form id="chatbot-form">
+		<input id="chatbot-input" type="text" placeholder="Kirjoita viesti…" autocomplete="off" />
+		<button id="chatbot-send" type="submit">Lähetä</button>
+	</form>
 </div>
 
 <style>
-  /* Floating bubble button */
-  #chatbot-bubble{
-    position:fixed;
-    right:20px;
-    bottom:20px;
-    z-index:999999;
-  }
-
-  #chatbot-open{
-    padding:12px 14px;
-    border-radius:999px;
-    cursor:pointer;
-  }
-
-  /* Chat window */
-  #chatbot-box{
-    display:none;
-    position:fixed;
-    right:20px;
-    bottom:70px;
-    width:350px;
-    max-width:95vw;
-    height:480px;
-    max-height:85vh;
-    background:#fff;
-    border:1px solid #ddd;
-    border-radius:12px;
-    z-index:999999;
-    overflow:visible;
-    font-family:system-ui;
-  }
-
-  /* Active state */
-  #chatbot-box.active{
-    display:block;
-  }
-
-  /* Header */
-  #chatbot-header{
-    padding:10px 12px;
-    border-bottom:1px solid #eee;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-  }
-
-  /* Messages area */
-  #chatbot-messages{
-    padding:12px;
-    height:320px;
-    overflow:auto;
-    background:#fafafa;
-  }
-
-  /* Input form */
-  #chatbot-form{
-    display:flex;
-    gap:8px;
-    padding:10px;
-    border-top:1px solid #eee;
-  }
-
-  #chatbot-input{
-    flex:1;
-    padding:10px;
-    border:1px solid #ddd;
-    border-radius:10px;
-    min-width:0;
-  }
-
-  #chatbot-send{
-    padding:10px 12px;
-    border-radius:10px;
-    cursor:pointer;
-  }
+	#chatbot-bubble{position:fixed;right:20px;bottom:20px;z-index:999999;}
+	#chatbot-open{padding:12px 14px;border-radius:999px;cursor:pointer;}
+	#chatbot-box{display:none;position:fixed;right:20px;bottom:70px;width:350px;max-width:95vw;height:480px;max-height:85vh;background:#fff;border:1px solid #ddd;border-radius:12px;z-index:999999;overflow:visible;font-family:system-ui;}
+	#chatbot-box.active{display:block;}
+	#chatbot-header{padding:10px 12px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;}
+	#chatbot-messages{padding:12px;height:320px;overflow:auto;background:#fafafa;}
+	#chatbot-form{display:flex;gap:8px;padding:10px;border-top:1px solid #eee;}
+	#chatbot-input{flex:1;padding:10px;border:1px solid #ddd;border-radius:10px;min-width:0;}
+	#chatbot-send{padding:10px 12px;border-radius:10px;cursor:pointer;}
 </style>
 
 <script>
 (function(){
+	const API_URL = "https://api.bittipuisto.fi/chat";
 
-  // API endpoint
-  const API_URL = "YOUR_API_URL";
+	function addMsg(messages, text, who){
+		const el = document.createElement("div");
+		el.style.margin = "8px 0";
+		el.style.padding = "10px";
+		el.style.borderRadius = "10px";
+		el.style.maxWidth = "90%";
+		el.style.whiteSpace = "pre-wrap";
+		if (who === "user") {
+			el.style.background = "#e8f0ff";
+			el.style.marginLeft = "auto";
+		} else {
+			el.style.background = "#fff";
+			el.style.border = "1px solid #eee";
+			el.style.marginRight = "auto";
+		}
+		el.textContent = text;
+		messages.appendChild(el);
+		messages.scrollTop = messages.scrollHeight;
+	}
 
-  /**
-   * Adds a chat message to the message container
-   * @param {HTMLElement} messages - message container element
-   * @param {string} text - message content
-   * @param {"user"|"bot"} who - sender
-   */
-  function addMsg(messages, text, who){
-    const el = document.createElement("div");
+	document.addEventListener("DOMContentLoaded", () => {
+		const openBtn = document.getElementById("chatbot-open");
+		const closeBtn = document.getElementById("chatbot-close");
+		const box = document.getElementById("chatbot-box");
+		const messages = document.getElementById("chatbot-messages");
+		const form = document.getElementById("chatbot-form");
+		const input = document.getElementById("chatbot-input");
 
-    // Basic styling
-    el.style.margin = "8px 0";
-    el.style.padding = "10px";
-    el.style.borderRadius = "10px";
-    el.style.maxWidth = "90%";
-    el.style.whiteSpace = "pre-wrap";
+		if (!openBtn || !closeBtn || !box || !messages || !form || !input) return;
 
-    // Different styles for user and bot
-    if (who === "user") {
-      el.style.background = "#e8f0ff";
-      el.style.marginLeft = "auto";
-    } else {
-      el.style.background = "#fff";
-      el.style.border = "1px solid #eee";
-      el.style.marginRight = "auto";
-    }
+		function setOpenState(isOpen){
+			box.classList.toggle("active", isOpen);
+			box.setAttribute("aria-hidden", String(!isOpen));
 
-    el.textContent = text;
-    messages.appendChild(el);
+			// Halutessasi vaihda napin teksti auki/kiinni
+			openBtn.textContent = isOpen ? "Sulje" : "Chat";
 
-    // Auto-scroll to bottom
-    messages.scrollTop = messages.scrollHeight;
-  }
+			if (isOpen) {
+				// init-viesti vain kerran
+				if (!messages.dataset.inited) {
+					addMsg(
+						messages,
+						"Moi! Olen Bittipuiston luoma esimerkkibotti. Tämä botti käyttää VAIN bittipuisto.fi-sivustolla olevaa tietoa ja vastaa sen mukaan kysymyksiin.",
+						"bot"
+					);
+					messages.dataset.inited = "1";
+				}
+				// focus inputiin
+				setTimeout(() => input.focus(), 0);
+			}
+		}
 
-  document.addEventListener("DOMContentLoaded", () => {
+		function toggleChat(){
+			const isOpen = box.classList.contains("active");
+			setOpenState(!isOpen);
+		}
 
-    // Element references
-    const openBtn = document.getElementById("chatbot-open");
-    const closeBtn = document.getElementById("chatbot-close");
-    const box = document.getElementById("chatbot-box");
-    const messages = document.getElementById("chatbot-messages");
-    const form = document.getElementById("chatbot-form");
-    const input = document.getElementById("chatbot-input");
+		// ✅ Chat-nappi toimii nyt toggle-na
+		openBtn.addEventListener("click", toggleChat);
 
-    if (!openBtn || !closeBtn || !box || !messages || !form || !input) return;
+		// ✅ Sulje-nappi sulkee
+		closeBtn.addEventListener("click", () => setOpenState(false));
 
-    /**
-     * Controls chat open/close state
-     * @param {boolean} isOpen
-     */
-    function setOpenState(isOpen){
-      box.classList.toggle("active", isOpen);
-      box.setAttribute("aria-hidden", String(!isOpen));
+		// (bonus) ESC sulkee
+		document.addEventListener("keydown", (e) => {
+			if (e.key === "Escape") setOpenState(false);
+		});
 
-      // Toggle button label
-      openBtn.textContent = isOpen ? "Sulje" : "Chat";
+		form.addEventListener("submit", async (e) => {
+			e.preventDefault();
+			const text = (input.value || "").trim();
+			if (!text) return;
 
-      if (isOpen) {
+			input.value = "";
+			addMsg(messages, text, "user");
 
-        // Initialize greeting only once
-        if (!messages.dataset.inited) {
-          addMsg(
-            messages,
-            "Hello! How can i help you today?",
-            "bot"
-          );
-          messages.dataset.inited = "1";
-        }
+		try {
+			const r = await fetch(API_URL, {
+			method: "POST",
+			headers: {"Content-Type":"application/json"},
+			body: JSON.stringify({ message: text })
+			});
 
-        // Focus input field
-        setTimeout(() => input.focus(), 0);
-      }
-    }
+			// If server returns non-2xx, show that instead of generic message
+			const contentType = r.headers.get("content-type") || "";
+			let payloadText = "";
+			let data = null;
 
-    /**
-     * Toggle chat visibility
-     */
-    function toggleChat(){
-      const isOpen = box.classList.contains("active");
-      setOpenState(!isOpen);
-    }
+			if (contentType.includes("application/json")) {
+			data = await r.json();
+			} else {
+			payloadText = await r.text(); // useful if server returns HTML error page
+			}
 
-    // Open/close from bubble button
-    openBtn.addEventListener("click", toggleChat);
+			if (!r.ok) {
+			addMsg(
+				messages,
+				`Palvelinvirhe (${r.status}). ${data?.detail || payloadText || "Yritä uudelleen."}`,
+				"bot"
+			);
+			return;
+			}
 
-    // Close from X button
-    closeBtn.addEventListener("click", () => setOpenState(false));
-
-    // Close on ESC key
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") setOpenState(false);
-    });
-
-    // Handle message submission
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const text = (input.value || "").trim();
-      if (!text) return;
-
-      input.value = "";
-      addMsg(messages, text, "user");
-
-      try {
-        const r = await fetch(API_URL, {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({message: text})
-        });
-
-        const data = await r.json();
-        addMsg(messages, data.reply || "Did not get reply. Try again", "bot");
-
-      } catch {
-        addMsg(messages, "Network error. Try again later.", "bot");
-      }
-    });
-
-  });
-
+			addMsg(messages, data?.reply || "En saanut vastausta juuri nyt.", "bot");
+		} catch (e) {
+			addMsg(messages, `Tuli virhe yhteydessä: ${e?.message || e}`, "bot");
+		}
+		});
+	});
 })();
 </script>
